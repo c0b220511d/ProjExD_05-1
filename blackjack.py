@@ -206,7 +206,56 @@ class Player():
         else:
             return False
 
-    
+
+'''
+class Game():
+    def __init__(self):
+        self.deck = Deck()
+        self.p = Player()
+        self.d = Player()
+        
+    def draw_img(self, card, xy):
+        Image(card, xy)
+        
+    def play_game(self):
+        pc1 = self.deck.draw()
+        dc1 = self.deck.draw()
+        pc2 = self.deck.draw()
+        dc2 = self.deck.draw()
+        self.p.total += int(pc1) + int(pc2)
+        self.d.total += int(dc1) + int(dc2)
+        
+'''
+'''
+class Button(pg.sprite.Sprite):
+    def __init__(self, text, b_color: tuple[int, int, int], hw: tuple[int, int], xy: tuple[int, int]):
+        super().__init__()
+        
+        self.text = text
+        self.font = pg.font.Font(None, 50)
+        
+        self.b_color = b_color
+        self.sf = pg.Surface(hw)
+        self.xy = xy
+        self.hw = hw
+        
+        self.button = pg.draw.rect(self.sf, self.b_color, self.hw)
+        self.rect = self.sf.get_rect()
+        self.f_color = (0, 0, 0)
+        self.tx = self.font.render(self.text, 0, self.f_color)
+        
+        self.rect.center = self.xy
+    def update(self):
+        self.tx = self.font.render(self.text, 0, self.color)
+        self.sf.blit(self.tx, self.rect)
+'''
+
+def draw_text(screen, text, size, x, y, font_path=None):
+    font = pg.font.Font(font_path, size) if font_path else pg.font.Font(None, size)
+    text_surface = font.render(text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect()
+    text_rect.topleft = (x, y)
+    screen.blit(text_surface, text_rect)
 
 class Hit(pg.sprite.Sprite):
     """
@@ -221,7 +270,7 @@ class Hit(pg.sprite.Sprite):
         super().__init__()
         gara = ["h", "s", "d", "k"]
         num = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-        self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[random.choice(gara)][random.choice(num)]}'), 0, 1.5)
+        # self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[random.choice(gara)][random.choice(num)]}'), 0, 1.5)
         self.img = Deck.draw()
         self.rct = self.img.get_rect()
         self.rct.centerx = 850 + 100*hit_num
@@ -274,20 +323,24 @@ def main():
     p1 = deck.draw() 
     p2 = deck.draw()
     d1 = deck.draw()
-    d2 = deck.draw()
+    d2 = Card("N", "N") # 裏の画像を指定
     
     p.total += int(p1) + int(p2)
-    d.total += int(d1) + int(d2)
     
 
     print(p.total)
+    print(d.total)
     tmr = 0
+    z = 0
+    b = 0
     clock = pg.time.Clock()
     hit_num = 0  # プレイヤーがそのラウンドでヒットした回数
+
 
     while True:
         #key_lst = pg.key.get_pressed()
         screen.fill((70, 128, 79))
+        draw_text(screen, "HIT(h) or STAND(s)", 100, 50, 700)
         player_cards.add(Image(str(p1), p1.r, (750, 900-225)))
         player_cards.add(Image(str(p2), p2.r, (850, 900-225)))
         dealer_cards.add(Image(str(d1), d1.r, (750, 225)))
@@ -299,7 +352,6 @@ def main():
             
             if event.type == pg.QUIT:
                 return
-        
 
             if chip.bet_flag == 0:
                 if event.type == pg.KEYDOWN and event.key == pg.K_UP:
@@ -315,6 +367,60 @@ def main():
                     chip.bet = 0
                     
             if chip.bet_flag == 1:
+                draw_text(screen, "HIT(h) or STAND(s)", 100, 50, 700)
+        
+                # h押下でヒット
+                if event.type == pg.KEYDOWN and event.key == pg.K_h:
+                    hit_num += 1
+                    p3 = deck.draw()
+                    p.total += int(p3)
+                    player_cards.add(Image(str(p3), p3.r, (850+hit_num*100, 900-225)))
+                    print(p.total)
+                    if p.match() == False:
+                        pg.display.update()
+                        time.sleep(2)
+                        return
+            
+                    # s押下でスタンド
+                    if event.type == pg.KEYDOWN and event.key == pg.K_s:
+                    hit_num = 0  # ヒット回数のリセット
+                    stand.add(Stand(60))
+            
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_h:
+                        a = deck.draw()
+                        player_cards.add(Image(str(a), a.r, (950+b, 900-225)))
+                        p.total += int(a)
+                        b += 100
+                        if p.total > 21:
+                            Flag_game = False
+                            break
+                    elif event.key == pg.K_s:
+                        d2 = deck.draw()  # 裏の画像を普通のトランプにかきかえ
+                        d.total += int(d1) + int(d2)
+                        if d.total >= 18:
+                            Flag_game = False
+                            break
+                        else:
+                            while d.total < 18:
+                                x = deck.draw()
+                                dealer_cards.add(Image(str(x), x.r, (950+z, 225)))
+                                d.total += int(x)
+                                z += 100
+                                Flag_game = False
+                                break
+                                
+                if Flag_game == False:
+                if p.total > 21:
+                    draw_text(screen, "YOU LOSE", 100, 100, 550)
+                elif p.total < 22 and d.total < 22:
+                    if p.total < d.total:
+                        draw_text(screen, "YOU LOSE", 100, 100, 550)
+                    else:
+                        draw_text(screen, "YOU WIN", 100, 100, 550)
+                else: 
+                    draw_text(screen, "YOU WIN", 100, 100, 550)
+                '''    
                 # s押下でスタンド
                 if event.type == pg.KEYDOWN and event.key == pg.K_s:
                     hit_num = 0  # ヒット回数のリセット
@@ -331,6 +437,7 @@ def main():
                         pg.display.update()
                         time.sleep(2)
                         return
+               '''
         
         chip.update(screen)
         hit.update(screen)

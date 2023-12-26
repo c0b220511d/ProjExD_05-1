@@ -10,7 +10,7 @@ WIDTH = 1600
 HEIGHT = 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
-class Card:
+class Card():
     card = {
         "h":
             {
@@ -75,15 +75,23 @@ class Card:
                 "J": 'k11@2x.png',
                 "Q": 'k12@2x.png',
                 "K": 'k13@2x.png'
+            },
+        None:
+            {
+                None: "back@2x.png"
             }
         }
     
+    suits = ['h', 's', 'd', 'k']
+
+    ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+    
     def __init__(self, s, r):
-        self.r = r
         self.s = s
-        self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{__class__.card[s][r]}'), 0, 2.0)
-        self.rct = self.img.get_rect()
-        self.rct.center = (800, 450)
+        self.r = r
+        #self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{__class__.card[s][r]}'), 0, 2.0)
+        #self.rct = self.img.get_rect()
+        #self.rct.center = (800, 450)
     
     def __int__(self) -> int:
         '''
@@ -101,9 +109,9 @@ class Card:
     def __str__(self):
         return self.s
     
-    def update(self, screen: pg.Surface):
-        screen.blit(self.img, self.rct)
-       
+    #def update(self, screen: pg.Surface):
+    #    screen.blit(self.img, self.rct)
+
 
 class Deck():
     '''
@@ -124,9 +132,26 @@ class Deck():
         '''
         if len(self.cards) == 0:
             return
+        
         return self.cards.pop()
 
-class Chip:
+class Image(pg.sprite.Sprite):
+    '''
+    カードのSurfaceを作成するクラス
+    '''
+    def __init__(self, s: str, r: int, xy: tuple[int, int]):
+        '''
+        引数1: カードの絵柄
+        引数2: カードの数字
+        '''
+        super().__init__()
+        self.s = s
+        self.r = r
+        self.image = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[s][r]}'), 0, 1.5)
+        self.rect = self.image.get_rect()
+        self.rect.center = xy
+    
+class Chip():
     """
     チップに関するクラス
     """
@@ -196,8 +221,8 @@ class Hit(pg.sprite.Sprite):
         super().__init__()
         gara = ["h", "s", "d", "k"]
         num = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-        # self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[random.choice(gara)][random.choice(num)]}'), 0, 1.5)
-        self.img = deck.draw()
+        self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[random.choice(gara)][random.choice(num)]}'), 0, 1.5)
+        self.img = Deck.draw()
         self.rct = self.img.get_rect()
         self.rct.centerx = 850 + 100*hit_num
         self.rct.centery = 900-225
@@ -258,34 +283,24 @@ def main():
     print(p.total)
     tmr = 0
     clock = pg.time.Clock()
-    tmr = 0
     hit_num = 0  # プレイヤーがそのラウンドでヒットした回数
-    
+
     while True:
+        #key_lst = pg.key.get_pressed()
         screen.fill((70, 128, 79))
-        key_lst = pg.key.get_pressed()
+        player_cards.add(Image(str(p1), p1.r, (750, 900-225)))
+        player_cards.add(Image(str(p2), p2.r, (850, 900-225)))
+        dealer_cards.add(Image(str(d1), d1.r, (750, 225)))
+        dealer_cards.add(Image(str(d2), d2.r, (850, 225)))
+        player_cards.draw(screen)
+        dealer_cards.draw(screen)
 
         for event in pg.event.get():
+            
             if event.type == pg.QUIT:
                 return
         
-            # h押下でヒット
-            if event.type == pg.KEYDOWN and event.key == pg.K_h:
-                hit_num += 1
-                p3 = deck.draw()
-                p.total += int(p3)
-                player_cards.add(Image(str(p3), p3.r, (850+hit_num*100, 900-225)))
-                print(p.total)
-                if p.match() == False:
-                    pg.display.update()
-                    time.sleep(2)
-                    return
-            
-            # s押下でスタンド
-            if event.type == pg.KEYDOWN and event.key == pg.K_s:
-                hit_num = 0  # ヒット回数のリセット
-                stand.add(Stand(60))
-            
+
             if chip.bet_flag == 0:
                 if event.type == pg.KEYDOWN and event.key == pg.K_UP:
                     if chip.bet < chip.value :
@@ -298,12 +313,29 @@ def main():
                     chip.now_bet = chip.bet
                     chip.value -= chip.bet
                     chip.bet = 0
-            
-        card.update(screen)
+                    
+            if chip.bet_flag == 1:
+                # s押下でスタンド
+                if event.type == pg.KEYDOWN and event.key == pg.K_s:
+                    hit_num = 0  # ヒット回数のリセット
+                    stand.add(Stand(60))
+                
+                # h押下でヒット
+                if event.type == pg.KEYDOWN and event.key == pg.K_h:
+                    hit_num += 1
+                    p3 = deck.draw()
+                    p.total += int(p3)
+                    player_cards.add(Image(str(p3), p3.r, (850+hit_num*100, 900-225)))
+                    print(p.total)
+                    if p.match() == False:
+                        pg.display.update()
+                        time.sleep(2)
+                        return
+        
         chip.update(screen)
-        pg.display.update()
         hit.update(screen)
         stand.update(screen)
+        pg.display.update()
         tmr += 1
         clock.tick(50)
         

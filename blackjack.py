@@ -2,17 +2,13 @@ import os
 import sys
 import math
 import pygame as pg
-import random
 
 WIDTH = 1600
 HEIGHT = 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
+ROUND_NOW = 0
 
-
-class Card():
-    '''
-    カードの情報を保存し、絵柄と数字を返すクラス
-    '''
+class Card:
     card = {
         "h":
             {
@@ -77,188 +73,61 @@ class Card():
                 "J": 'k11@2x.png',
                 "Q": 'k12@2x.png',
                 "K": 'k13@2x.png'
-            },
-        None:
-            {
-                None: "back@2x.png"
             }
         }
-    suits = ['h', 's', 'd', 'k']
-
-    ranks = ["A","2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
     
-    used_card = {}
-    def __init__(self, s: str, r: str):
-        '''
-        カード画像のSurfaceを生成する
-        引数1 s: カードの絵柄
-        引数2 r: カードの数字
-        '''
+    def __init__(self, s, r):
         self.r = r
         self.s = s
-    
-    def __int__(self) -> int:
-        '''
-        カードの数字を返す関数
-        戻り値 num: カードの数字
-        '''
-        if self.r == 'J' or self.r == 'Q' or self.r == 'K':
-            num = 10
-        elif self.r == 'A':
-            num = 1
-        else:
-            num = int(self.r)
-        return num
-    
-    def __str__(self):
-        return self.s
+        self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{__class__.card[s][r]}'), 0, 2.0)
+        self.rct = self.img.get_rect()
+        self.rct.center = (800, 450)
+        
+    def update(self, screen: pg.Surface):
+        screen.blit(self.img, self.rct)
+        
 
+class Round:
+    """
+    ラウンド数に関するクラス
+    """
+    def __init__(self, round_max: int):
+        """
+        ラウンド数を数えたい
+        引数 round: ゲームを何回行うか
+        """
+        self.round_max = round_max
 
-class Deck():
-    '''
-    カードをシャッフルし、山札とするクラス
-    このクラスを利用することで重複をなくす
-    '''
-    def __init__(self):
-        self.cards = []
-        for i in Card.suits:
-            for j in Card.ranks:
-                self.cards.append(Card(i, j))
-        random.shuffle(self.cards)
+    def update(self, screen:pg.Surface):
+        """
+        ラウンド数を更新したい
+        """
+        font = pg.font.SysFont(None, 100)
+        text = font.render("round "+str(ROUND_NOW)+"/"+str(self.round_max), True, (0, 255, 255))
+        screen.blit(text, [1200, 0])
 
-    def draw(self) -> Card:
-        '''
-        シャッフルされたカードのリストから要素を取り出す関数
-        戻り値: Cardクラスのインスタンス
-        '''
-        if len(self.cards) == 0:
-            return
-        return self.cards.pop()
-
-
-class Image(pg.sprite.Sprite):
-    '''
-    カードのSurfaceを作成するクラス
-    '''
-    def __init__(self, s: str, r: int, xy: tuple[int, int]):
-        '''
-        引数1: カードの絵柄
-        引数2: カードの数字
-        '''
-        super().__init__()
-        self.s = s
-        self.r = r
-        self.image = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[s][r]}'), 0, 1.5)
-        self.rect = self.image.get_rect()
-        self.rect.center = xy
-
-
-class Player():
-    '''
-    プレイヤーのトータルを保存し、バースト判定を行うクラス
-    '''
-    def __init__(self):
-        self.total = 0
-        self.ofer = False
-        
-    def match(self):
-        '''
-        トータルからバーストしていないか確認する関数
-        '''
-        if self.total == 21:
-            return True
-        
-        elif self.total > 21:
-            return True
-        
-        else:
-            return False
-
-'''
-class Game():
-    def __init__(self):
-        self.deck = Deck()
-        self.p = Player()
-        self.d = Player()
-        
-    def draw_img(self, card, xy):
-        Image(card, xy)
-        
-    def play_game(self):
-        pc1 = self.deck.draw()
-        dc1 = self.deck.draw()
-        pc2 = self.deck.draw()
-        dc2 = self.deck.draw()
-        self.p.total += int(pc1) + int(pc2)
-        self.d.total += int(dc1) + int(dc2)
-        
-'''
-'''
-class Button(pg.sprite.Sprite):
-    def __init__(self, text, b_color: tuple[int, int, int], hw: tuple[int, int], xy: tuple[int, int]):
-        super().__init__()
-        
-        self.text = text
-        self.font = pg.font.Font(None, 50)
-        
-        self.b_color = b_color
-        self.sf = pg.Surface(hw)
-        self.xy = xy
-        self.hw = hw
-        
-        self.button = pg.draw.rect(self.sf, self.b_color, self.hw)
-        self.rect = self.sf.get_rect()
-        self.f_color = (0, 0, 0)
-        self.tx = self.font.render(self.text, 0, self.f_color)
-        
-        self.rect.center = self.xy
-    def update(self):
-        self.tx = self.font.render(self.text, 0, self.color)
-        self.sf.blit(self.tx, self.rect)
-'''
-        
 
 def main():
+    global ROUND_NOW
     pg.display.set_caption('black jack')
-    screen = pg.display.set_mode((WIDTH, HEIGHT))  
-    screen.fill((70, 128, 79))
-    pg.mouse.set_visible(True)  # マウスカーソル表示
-    
-    player_cards = pg.sprite.Group()  # プレイヤーのカードを保存するスプリットグループ
-    dealer_cards = pg.sprite.Group()  # ディーラーのカードを保存するスプリットグループ
-    #buttons = pg.sprite.Group()
-    
-    p = Player()
-    d = Player()
-    
-    deck = Deck()
-    p1 = deck.draw() 
-    p2 = deck.draw()
-    d1 = deck.draw()
-    d2 = deck.draw()
-    
-    p.total += int(p1) + int(p2)
-    d.total += int(d1) + int(d2)
-    
-    
-    print(p.total)
-    tmr = 0
+    screen = pg.display.set_mode((WIDTH, HEIGHT))
+    round = Round(5)
+    card = Card("d",'A')
     clock = pg.time.Clock()
+    tmr = 0
 
     while True:
+        screen.fill((70, 128, 79))
+        key_lst = pg.key.get_pressed()
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
             
-        player_cards.add(Image(str(p1), p1.r, (750, 900-225)))
-        player_cards.add(Image(str(p2), p2.r, (850, 900-225)))
-        dealer_cards.add(Image(str(d1), d1.r, (750, 225)))
-        dealer_cards.add(Image(str(d2), d2.r, (750+100*1, 225)))
-        player_cards.draw(screen)
-        dealer_cards.draw(screen)
-        
-        #buttons.add(Button('hit', (255, 0, 0), (50, 50), (0, 0)))
-        #buttons.update()
+        card.update(screen)
+        if ROUND_NOW<5:  # 1ゲーム終わったところに書きたい
+            ROUND_NOW += 1
+        round.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)

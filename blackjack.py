@@ -6,7 +6,7 @@ import pygame as pg
 WIDTH = 1600
 HEIGHT = 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
-ROUND_NOW = 0
+ROUND_NOW = 0  # 今何ラウンド目か
 
 class Card:
     card = {
@@ -94,7 +94,7 @@ class Round:
     def __init__(self, round_max: int):
         """
         ラウンド数を数えたい
-        引数 round: ゲームを何回行うか
+        引数 round_max: ゲームを何回行うか
         """
         self.round_max = round_max
 
@@ -111,10 +111,35 @@ def main():
     global ROUND_NOW
     pg.display.set_caption('black jack')
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-    round = Round(5)
+    round_max = 1  # 何ラウンドゲームを行うか
+    round_flag = 1  # ラウンド数設定画面か否か
     card = Card("d",'A')
     clock = pg.time.Clock()
     tmr = 0
+
+    while round_flag:  # ラウンド数設定
+        screen.fill((70, 128, 79))
+        key_lst = pg.key.get_pressed()
+        
+        font = pg.font.SysFont(None, 50)
+        text1 = font.render("Set the number of rounds using the arrow keys.", True, (0, 255, 255))
+        text2 = font.render("Confirm with enter key.", True, (0, 255, 255))
+        screen.blit(text1, [0, 0])
+        screen.blit(text2, [0, 50])
+
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                return
+            if event.type == pg.KEYDOWN and event.key == pg.K_UP:  # 上キーで増やす
+                round_max += 1
+            if event.type == pg.KEYDOWN and event.key == pg.K_DOWN:  # 下キーで減らす
+                if round_max > 1:
+                    round_max -= 1
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:  # リターンキーで決定
+                round_flag = 0
+        round = Round(round_max)
+        round.update(screen)
+        pg.display.update()
 
     while True:
         screen.fill((70, 128, 79))
@@ -125,7 +150,7 @@ def main():
                 return
             
         card.update(screen)
-        if ROUND_NOW<5:  # 1ゲーム終わったところに書きたい
+        if ROUND_NOW<round_max:  # 1ゲーム終わったところに書きたい
             ROUND_NOW += 1
         round.update(screen)
         pg.display.update()

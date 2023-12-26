@@ -79,6 +79,10 @@ class Card():
                 "J": 'k11@2x.png',
                 "Q": 'k12@2x.png',
                 "K": 'k13@2x.png'
+            },
+        "N":
+            {
+                "N": "back@2x.png"
             }
         }
     suits = ['h', 's', 'd', 'k']
@@ -220,6 +224,13 @@ class Button(pg.sprite.Sprite):
         self.tx = self.font.render(self.text, 0, self.color)
         self.sf.blit(self.tx, self.rect)
 '''
+
+def draw_text(screen, text, size, x, y, font_path=None):
+    font = pg.font.Font(font_path, size) if font_path else pg.font.Font(None, size)
+    text_surface = font.render(text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect()
+    text_rect.topleft = (x, y)
+    screen.blit(text_surface, text_rect)
         
 
 class Hit(pg.sprite.Sprite):
@@ -236,7 +247,7 @@ class Hit(pg.sprite.Sprite):
         gara = ["h", "s", "d", "k"]
         num = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
         # self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[random.choice(gara)][random.choice(num)]}'), 0, 1.5)
-        self.img = deck.draw()
+        self.img = Deck.draw()
         self.rct = self.img.get_rect()
         self.rct.centerx = 850 + 100*hit_num
         self.rct.centery = 900-225
@@ -289,19 +300,24 @@ def main():
     p1 = deck.draw() 
     p2 = deck.draw()
     d1 = deck.draw()
-    d2 = deck.draw()
+    d2 = Card("N", "N") # 裏の画像を指定
     
     p.total += int(p1) + int(p2)
-    d.total += int(d1) + int(d2)
     
 
     print(p.total)
+    print(d.total)
     tmr = 0
+    z = 0
+    b = 0
     clock = pg.time.Clock()
     tmr = 0
     hit_num = 0  # プレイヤーがそのラウンドでヒットした回数
+    Flag_game = True  # ゲーム中どうかの変数
+
     while True:
         for event in pg.event.get():
+            draw_text(screen, "HIT(h) or STAND(s)", 100, 50, 700)
             if event.type == pg.QUIT:
                 return
         
@@ -321,6 +337,40 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_s:
                 hit_num = 0  # ヒット回数のリセット
                 stand.add(Stand(60))
+            
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_h:
+                    a = deck.draw()
+                    player_cards.add(Image(str(a), a.r, (950+b, 900-225)))
+                    p.total += int(a)
+                    b += 100
+                    if p.total > 21:
+                        Flag_game = False
+                        break
+                elif event.key == pg.K_s:
+                    d2 = deck.draw()  # 裏の画像を普通のトランプにかきかえ
+                    d.total += int(d1) + int(d2)
+                    if d.total >= 18:
+                        Flag_game = False
+                        break
+                    else:
+                        while d.total < 18:
+                            x = deck.draw()
+                            dealer_cards.add(Image(str(x), x.r, (950+z, 225)))
+                            d.total += int(x)
+                            z += 100
+                            Flag_game = False
+                            break
+        if Flag_game == False:
+            if p.total > 21:
+                draw_text(screen, "YOU LOSE", 100, 100, 550)
+            elif p.total < 22 and d.total < 22:
+                if p.total < d.total:
+                    draw_text(screen, "YOU LOSE", 100, 100, 550)
+                else:
+                    draw_text(screen, "YOU WIN", 100, 100, 550)
+            else: 
+                draw_text(screen, "YOU WIN", 100, 100, 550)
             
         player_cards.add(Image(str(p1), p1.r, (750, 900-225)))
         player_cards.add(Image(str(p2), p2.r, (850, 900-225)))

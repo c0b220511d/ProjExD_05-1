@@ -178,7 +178,7 @@ class Player():
         elif self.total < 21:
             return True
           
-         else:
+        else:
             return False
 
     

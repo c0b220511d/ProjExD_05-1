@@ -10,11 +10,7 @@ WIDTH = 1600
 HEIGHT = 900
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 
-
-class Card():
-    '''
-    カードの情報を保存し、絵柄と数字を返すクラス
-    '''
+class Card:
     card = {
         "h":
             {
@@ -81,17 +77,8 @@ class Card():
                 "K": 'k13@2x.png'
             }
         }
-    suits = ['h', 's', 'd', 'k']
-
-    ranks = ["A","2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
     
-    used_card = {}
-    def __init__(self, s: str, r: str):
-        '''
-        カード画像のSurfaceを生成する
-        引数1 s: カードの絵柄
-        引数2 r: カードの数字
-        '''
+    def __init__(self, s, r):
         self.r = r
         self.s = s
         self.img = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{__class__.card[s][r]}'), 0, 2.0)
@@ -139,24 +126,40 @@ class Deck():
             return
         return self.cards.pop()
 
+class Chip:
+    """
+    チップに関するクラス
+    """
+    def __init__(self, c: int):
+        self.value = c      # 手持ちのチップの数
+        self.bet = 0        # ベットするチップの数
+        self.now_bet = 0    # ベットされたチップの数
+        self.bet_flag = 0   # ベットしたかどうか
+        self.font = pg.font.Font(None, 100)
+        self.color = (128, 0, 0)
+        self.image_v = self.font.render(f"Chip: {self.value}", 0, self.color)
+        self.rect_v = self.image_v.get_rect()
+        self.rect_v.center = 180, HEIGHT-50
+        self.image_b = self.font.render(f"Bet?: {self.bet}", 0, self.color)
+        self.rect_b = self.image_b.get_rect()
+        self.rect_b.center = 130, 50
+        self.image_nb = self.font.render(f"Bet: {self.now_bet}", 0, self.color)
+        self.rect_nb = self.image_nb.get_rect()
+        self.rect_nb.center = 110, 50
 
-class Image(pg.sprite.Sprite):
-    '''
-    カードのSurfaceを作成するクラス
-    '''
-    def __init__(self, s: str, r: int, xy: tuple[int, int]):
-        '''
-        引数1: カードの絵柄
-        引数2: カードの数字
-        '''
-        super().__init__()
-        self.s = s
-        self.r = r
-        self.image = pg.transform.rotozoom(pg.image.load(f'{MAIN_DIR}/playingcard-mini/{Card.card[s][r]}'), 0, 1.5)
-        self.rect = self.image.get_rect()
-        self.rect.center = xy
+    def update(self, screen: pg.Surface):
+        self.image_v = self.font.render(f"Chip: {self.value}", 0, self.color)
+        screen.blit(self.image_v, self.rect_v)
 
-
+        if self.bet_flag == 0:
+            self.image_b = self.font.render(f"Bet?: {self.bet}", 0, self.color)
+            screen.blit(self.image_b, self.rect_b)
+            
+                
+        else:
+            self.image_nb = self.font.render(f"Bet: {self.now_bet}", 0, self.color)
+            screen.blit(self.image_nb, self.rect_nb)
+            
 class Player():
     '''
     プレイヤーのトータルを保存し、バースト判定を行うクラス
@@ -174,53 +177,11 @@ class Player():
         
         elif self.total < 21:
             return True
-        
-        else:
+          
+         else:
             return False
 
-'''
-class Game():
-    def __init__(self):
-        self.deck = Deck()
-        self.p = Player()
-        self.d = Player()
-        
-    def draw_img(self, card, xy):
-        Image(card, xy)
-        
-    def play_game(self):
-        pc1 = self.deck.draw()
-        dc1 = self.deck.draw()
-        pc2 = self.deck.draw()
-        dc2 = self.deck.draw()
-        self.p.total += int(pc1) + int(pc2)
-        self.d.total += int(dc1) + int(dc2)
-        
-'''
-'''
-class Button(pg.sprite.Sprite):
-    def __init__(self, text, b_color: tuple[int, int, int], hw: tuple[int, int], xy: tuple[int, int]):
-        super().__init__()
-        
-        self.text = text
-        self.font = pg.font.Font(None, 50)
-        
-        self.b_color = b_color
-        self.sf = pg.Surface(hw)
-        self.xy = xy
-        self.hw = hw
-        
-        self.button = pg.draw.rect(self.sf, self.b_color, self.hw)
-        self.rect = self.sf.get_rect()
-        self.f_color = (0, 0, 0)
-        self.tx = self.font.render(self.text, 0, self.f_color)
-        
-        self.rect.center = self.xy
-    def update(self):
-        self.tx = self.font.render(self.text, 0, self.color)
-        self.sf.blit(self.tx, self.rect)
-'''
-        
+    
 
 class Hit(pg.sprite.Sprite):
     """
@@ -270,8 +231,7 @@ class Stand(pg.sprite.Sprite):
 def main():
     pg.display.set_caption('black jack')
     screen = pg.display.set_mode((WIDTH, HEIGHT))  
-    
-    screen = pg.display.set_mode((WIDTH, HEIGHT))  
+    chip = Chip(200)
     screen.fill((70, 128, 79))
     pg.mouse.set_visible(True)  # マウスカーソル表示
 
@@ -300,7 +260,11 @@ def main():
     clock = pg.time.Clock()
     tmr = 0
     hit_num = 0  # プレイヤーがそのラウンドでヒットした回数
+    
     while True:
+        screen.fill((70, 128, 79))
+        key_lst = pg.key.get_pressed()
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
@@ -322,15 +286,21 @@ def main():
                 hit_num = 0  # ヒット回数のリセット
                 stand.add(Stand(60))
             
-        player_cards.add(Image(str(p1), p1.r, (750, 900-225)))
-        player_cards.add(Image(str(p2), p2.r, (850, 900-225)))
-        dealer_cards.add(Image(str(d1), d1.r, (750, 225)))
-        dealer_cards.add(Image(str(d2), d2.r, (750+100*1, 225)))
-        player_cards.draw(screen)
-        dealer_cards.draw(screen)
-        
-        #buttons.add(Button('hit', (255, 0, 0), (50, 50), (0, 0)))
-        #buttons.update()
+            if chip.bet_flag == 0:
+                if event.type == pg.KEYDOWN and event.key == pg.K_UP:
+                    if chip.bet < chip.value :
+                        chip.bet += 1
+                if event.type == pg.KEYDOWN and event.key == pg.K_DOWN:
+                    if chip.bet > 0:
+                        chip.bet -= 1
+                if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
+                    chip.bet_flag = 1
+                    chip.now_bet = chip.bet
+                    chip.value -= chip.bet
+                    chip.bet = 0
+            
+        card.update(screen)
+        chip.update(screen)
         pg.display.update()
         hit.update(screen)
         stand.update(screen)

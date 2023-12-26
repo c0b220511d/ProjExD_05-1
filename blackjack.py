@@ -76,9 +76,9 @@ class Card():
                 "Q": 'k12@2x.png',
                 "K": 'k13@2x.png'
             },
-        None:
+        "None":
             {
-                None: "back@2x.png"
+                "None": "back@2x.png"
             }
         }
     
@@ -323,13 +323,11 @@ def main():
     p1 = deck.draw() 
     p2 = deck.draw()
     d1 = deck.draw()
-    d2 = Card("N", "N") # 裏の画像を指定
+    d2 = Card("None", "None") # 裏の画像を指定
     
     p.total += int(p1) + int(p2)
     
 
-    print(p.total)
-    print(d.total)
     tmr = 0
     z = 0
     b = 0
@@ -339,14 +337,12 @@ def main():
 
     while True:
         #key_lst = pg.key.get_pressed()
-        screen.fill((70, 128, 79))
-        draw_text(screen, "HIT(h) or STAND(s)", 100, 50, 700)
+
         player_cards.add(Image(str(p1), p1.r, (750, 900-225)))
         player_cards.add(Image(str(p2), p2.r, (850, 900-225)))
         dealer_cards.add(Image(str(d1), d1.r, (750, 225)))
         dealer_cards.add(Image(str(d2), d2.r, (850, 225)))
-        player_cards.draw(screen)
-        dealer_cards.draw(screen)
+
 
         for event in pg.event.get():
             
@@ -354,6 +350,7 @@ def main():
                 return
 
             if chip.bet_flag == 0:
+                screen.fill((70, 128, 79))
                 if event.type == pg.KEYDOWN and event.key == pg.K_UP:
                     if chip.bet < chip.value :
                         chip.bet += 1
@@ -367,59 +364,56 @@ def main():
                     chip.bet = 0
                     
             if chip.bet_flag == 1:
+                Flag_game = True
                 draw_text(screen, "HIT(h) or STAND(s)", 100, 50, 700)
-        
-                # h押下でヒット
-                if event.type == pg.KEYDOWN and event.key == pg.K_h:
-                    hit_num += 1
-                    p3 = deck.draw()
-                    p.total += int(p3)
-                    player_cards.add(Image(str(p3), p3.r, (850+hit_num*100, 900-225)))
-                    print(p.total)
-                    if p.match() == False:
-                        pg.display.update()
-                        time.sleep(2)
-                        return
-            
-                    # s押下でスタンド
-                    if event.type == pg.KEYDOWN and event.key == pg.K_s:
-                    hit_num = 0  # ヒット回数のリセット
-                    stand.add(Stand(60))
-            
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_h:
-                        a = deck.draw()
-                        player_cards.add(Image(str(a), a.r, (950+b, 900-225)))
-                        p.total += int(a)
-                        b += 100
-                        if p.total > 21:
-                            Flag_game = False
-                            break
-                    elif event.key == pg.K_s:
-                        d2 = deck.draw()  # 裏の画像を普通のトランプにかきかえ
-                        d.total += int(d1) + int(d2)
-                        if d.total >= 18:
-                            Flag_game = False
-                            break
-                        else:
-                            while d.total < 18:
-                                x = deck.draw()
-                                dealer_cards.add(Image(str(x), x.r, (950+z, 225)))
-                                d.total += int(x)
-                                z += 100
+                print(Flag_game, p.total)
+                if Flag_game == True:
+                    if event.type == pg.KEYDOWN:
+                        if event.key == pg.K_h:
+                            a = deck.draw()
+                            player_cards.add(Image(str(a), a.r, (950+b, 900-225)))
+                            p.total += int(a)
+                            b += 100
+                            if p.total > 21:
+                                Flag_game = False
+                                #break
+
+                        elif event.key == pg.K_s:
+                            d2 = deck.draw()  # 裏の画像を普通のトランプにかきかえ
+                            d.total += int(d1) + int(d2)
+                            if d.total >= 18:
                                 Flag_game = False
                                 break
-                                
+                            else:
+                                while d.total < 18:
+                                    x = deck.draw()
+                                    dealer_cards.add(Image(str(x), x.r, (950+z, 225)))
+                                    d.total += int(x)
+                                    z += 100
+                                    if d.total >= 18:
+                                        Flag_game = False
+                                        break
+                                    
                 if Flag_game == False:
-                if p.total > 21:
-                    draw_text(screen, "YOU LOSE", 100, 100, 550)
-                elif p.total < 22 and d.total < 22:
-                    if p.total < d.total:
+                    if p.total > 21:
                         draw_text(screen, "YOU LOSE", 100, 100, 550)
-                    else:
+                        #time.sleep(2)
+                        #return
+                    
+                    elif p.total < 22 and d.total < 22:
+                        if p.total < d.total:
+                            draw_text(screen, "YOU LOSE", 100, 100, 550)
+                            #time.sleep(2)
+                            #return
+                        else:
+                            draw_text(screen, "YOU WIN", 100, 100, 550)
+                            #time.sleep(2)
+                            #return
+                        
+                    else: 
                         draw_text(screen, "YOU WIN", 100, 100, 550)
-                else: 
-                    draw_text(screen, "YOU WIN", 100, 100, 550)
+                        #time.sleep(2)
+                        #return
                 '''    
                 # s押下でスタンド
                 if event.type == pg.KEYDOWN and event.key == pg.K_s:
@@ -438,7 +432,8 @@ def main():
                         time.sleep(2)
                         return
                '''
-        
+        player_cards.draw(screen)
+        dealer_cards.draw(screen)
         chip.update(screen)
         hit.update(screen)
         stand.update(screen)
